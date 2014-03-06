@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+	<html>
+	<head>
+  <meta charset="utf-8">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <title>blinkentree</title>
+  <link rel="stylesheet" href="http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.min.css" />
+  <script src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.min.js"></script>
+  <style>
+	  body, .ui-page {
+		  background: black;
+	  }
+	  
+	  .ui-body {
+		  padding-bottom: 1.5em;
+	  }
+	  
+	  div.ui-slider {
+		  width: 88%; 
+	  }
+	  
+	  #red, #green, #blue, #intensity {
+		  display: block;
+		  margin: 10px;
+	  }
+	  
+	  #red {
+		  background: #f00;
+	  }
+	  
+	  #green {
+		  background: #0f0;
+	  }
+	  
+	  #blue {
+		  background: #00f;
+	  }
+	  
+	  #containing-element , #default {
+		  margin: 10px;
+	  }
+	  
+	  #containing-element .ui-slider-switch { width: 6em }
+  </style>
+  <script>
+	  var lastRed, lastGreen, lastBlue, lastIntensity, lastRainbow = 0;
+	  var timer = null;
+	  var displayTimer = null;
+	  
+	  function resendValues()
+	  {
+		  var red = $('#red').val();
+		  var green = $('#green').val();
+		  var blue = $('#blue').val();
+		  var intensity = $('#intensity').val();
+		  
+		  var rainbow = 0;
+		  if ($('#rainbow').val() == 'on')
+		  {
+			  rainbow = 1;
+			  if (!displayTimer) displayTimer = window.setInterval('getColors()', 333);
+		  }
+		  else
+		  {
+			  clearInterval(displayTimer);
+		  }
+		  
+		  if (lastRed == red && lastGreen == green && lastBlue == blue && lastIntensity == intensity && lastRainbow == rainbow)
+		  {
+		  	return;
+			}
+		  
+	  	$.post('/setColors', { red: red, green: green, blue: blue, intensity: intensity, rainbow: rainbow } );
+		
+		lastRed = red;
+		lastGreen = green;
+		lastBlue = blue;
+		lastIntensity = intensity;
+		lastRainbow = rainbow;
+	  }
+	  
+	  function defaultColor()
+	  {
+	  	$.get("/setDefaultColor",function(data){getColors()});
+	  }
+	  
+	  function getColors()
+	  {
+		  $.get("/getColors",
+		     function(data){
+				 $('#red').val(data.red);
+				 $('#red').slider('refresh');
+				 $('#green').val(data.green);
+				 $('#green').slider('refresh');
+				 $('#blue').val(data.blue);
+				 $('#blue').slider('refresh');
+				 $('#intensity').val(data.intensity);
+				 $('#intensity').slider('refresh');
+				 
+				 if (data.rainbow == 0)
+				 {
+				 	$('#rainbow').val('off');
+					lastRainbow = 0;
+				 }
+				 else
+				 {
+				 	$('#rainbow').val('on');
+					lastRainbow = 1;
+				 }
+				 $('#rainbow').slider('refresh');
+				 
+				 lastRed = data.red;
+				 lastGreen = data.green;
+				 lastBlue = data.blue;
+				 lastIntensity = data.intensity;
+				 
+		  		 if (!timer)
+				 {
+					 timer = window.setInterval('resendValues()', 100);
+				 }
+		     }, "json");
+		 }
+	  
+    $(document).ready(function(){
+		getColors();
+	});
+  </script>
+</head>
+<body>
+  <div data-role="header" data-position="inline"><h1>Blinkentree</h1></div>
+    <div class="ui-body ui-body-a">
+      <input type="range" name="slider" id="red" value="0" min="0" max="255"  />
+      <input type="range" name="slider" id="green" value="0" min="0" max="255"  />
+      <input type="range" name="slider" id="blue" value="0" min="0" max="255"  />
+	  <input type="range" name="slider" id="intensity" value="0" min="0" max="255"  />
+	  <div id="containing-element">
+		  <label for="rainbow">Rainbow:</label>
+	  <select name="rainbow" id="rainbow" data-role="slider">
+	  	<option value="off">Off</option>
+	  	<option value="on">On</option>
+	  </select> 
+    </div>
+	<a href="#" data-role="button" onclick="defaultColor();" id="default">Default color</a>
+  </body>
+</html>
